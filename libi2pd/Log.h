@@ -19,6 +19,7 @@
 #include <thread>
 #include <functional>
 #include "Queue.h"
+#include "Service.h"
 
 #ifndef _WIN32
 #include <syslog.h>
@@ -48,7 +49,7 @@ namespace log {
 
 	struct LogMsg; /* forward declaration */
 
-	class Log
+    class Log : public Service
 	{
 		private:
 
@@ -61,8 +62,6 @@ namespace log {
 			i2p::util::Queue<std::shared_ptr<LogMsg> > m_Queue;
 			bool m_HasColors;
 			std::string m_TimeFormat;
-			volatile bool m_IsRunning;
-			std::thread * m_Thread;
 
 		private:
 
@@ -70,8 +69,11 @@ namespace log {
 			Log (const Log &);
 			const Log& operator=(const Log&);
 
-			void Run ();
+            virtual void Run() noexcept override;
+            virtual void WakeUp() noexcept override;
+
 			void Process (std::shared_ptr<LogMsg> msg);
+
 
 			/**
 			 * @brief Makes formatted string from unix timestamp
@@ -86,11 +88,8 @@ namespace log {
 			Log ();
 			~Log ();
 
-			LogType  GetLogType  () { return m_Destination; };
-			LogLevel GetLogLevel () { return m_MinLevel; };
-
-			void Start ();
-			void Stop ();
+            LogType  GetLogType  () { return m_Destination; }
+            LogLevel GetLogLevel () { return m_MinLevel; }
 
 			/**
 			 * @brief  Sets minimal allowed level for log messages
@@ -133,6 +132,8 @@ namespace log {
 
 			/** @brief  Reopen log file */
 			void Reopen();
+
+			void CleanUp();
 	};
 
 	/**

@@ -72,6 +72,7 @@ set(LIBI2PD_SRC
   "${LIBI2PD_SRC_DIR}/Reseed.cpp"
   "${LIBI2PD_SRC_DIR}/RouterContext.cpp"
   "${LIBI2PD_SRC_DIR}/RouterInfo.cpp"
+  "${LIBI2PD_SRC_DIR}/Service.cpp"
   "${LIBI2PD_SRC_DIR}/Signature.cpp"
   "${LIBI2PD_SRC_DIR}/SSU.cpp"
   "${LIBI2PD_SRC_DIR}/SSUData.cpp"

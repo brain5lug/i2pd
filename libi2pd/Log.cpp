@@ -65,51 +65,33 @@ namespace log {
 
 	Log::Log():
 	m_Destination(eLogStdout), m_MinLevel(eLogInfo),
-	m_LogStream (nullptr), m_Logfile(""), m_HasColors(true), m_TimeFormat("%H:%M:%S"),
-	m_IsRunning (false), m_Thread (nullptr)
+    m_LogStream (nullptr), m_Logfile(""), m_HasColors(true), m_TimeFormat("%H:%M:%S")
 	{
 	}
 
 	Log::~Log ()
 	{
-		delete m_Thread;
+        Stop();
 	}
 
-	void Log::Start ()
-	{
-		if (!m_IsRunning)
-		{
-			m_IsRunning = true;
-			m_Thread = new std::thread (std::bind (&Log::Run, this));
-		}
-	}
-
-	void Log::Stop ()
-	{
-		switch (m_Destination)
-		{
+    void Log::CleanUp ()
+    {
+        switch (m_Destination)
+        {
 #ifndef _WIN32
-			case eLogSyslog :
-				closelog();
-				break;
+            case eLogSyslog :
+                closelog();
+                break;
 #endif
-			case eLogFile:
-			case eLogStream:
-					if (m_LogStream) m_LogStream->flush();
-				break;
-			default:
-				/* do nothing */
-				break;
-		}
-		m_IsRunning = false;
-		m_Queue.WakeUp ();
-		if (m_Thread)
-		{
-			m_Thread->join ();
-			delete m_Thread;
-			m_Thread = nullptr;
-		}
-	}
+            case eLogFile:
+            case eLogStream:
+                    if (m_LogStream) m_LogStream->flush();
+                break;
+            default:
+                /* do nothing */
+                break;
+        }
+    }
 
 	std::string str_tolower(std::string s) {
 		std::transform(s.begin(), s.end(), s.begin(),
@@ -178,21 +160,26 @@ namespace log {
 		} // switch
 	}
 
-	void Log::Run ()
+    void Log::Run () noexcept
 	{
 		i2p::util::SetThreadName("Logging");
 
 		Reopen ();
-		while (m_IsRunning)
+		while (is_active())
 		{
 			std::shared_ptr<LogMsg> msg;
 			while ((msg = m_Queue.Get ()))
 				Process (msg);
 			if (m_LogStream) m_LogStream->flush();
-			if (m_IsRunning)
+			if (is_active())
 				m_Queue.Wait ();
 		}
 	}
+
+    void Log::WakeUp() noexcept
+    {
+        m_Queue.WakeUp();
+    }
 
 	void Log::Append(std::shared_ptr<i2p::log::LogMsg> & msg)
 	{
